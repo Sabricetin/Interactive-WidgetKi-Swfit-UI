@@ -9,34 +9,27 @@ import WidgetKit
 import SwiftUI
 
 struct Provider: TimelineProvider {
-    func placeholder(in context: Context) -> SimpleEntry {
-        SimpleEntry(date: Date(), emoji: "😀")
+    func placeholder(in context: Context) -> ToDoEntry {
+        ToDoEntry(toDoDisplay: Array(SharedDatas.shared.toDos.prefix(3)))
     }
 
-    func getSnapshot(in context: Context, completion: @escaping (SimpleEntry) -> ()) {
-        let entry = SimpleEntry(date: Date(), emoji: "😀")
+    func getSnapshot(in context: Context, completion: @escaping (ToDoEntry) -> ()) {
+       let entry = ToDoEntry(toDoDisplay: Array(SharedDatas.shared.toDos.prefix(3)))
         completion(entry)
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> ()) {
-        var entries: [SimpleEntry] = []
+        
+        let toDisplay = Array(SharedDatas.shared.toDos.prefix(3))
 
-        // Generate a timeline consisting of five entries an hour apart, starting from the current date.
-        let currentDate = Date()
-        for hourOffset in 0 ..< 5 {
-            let entryDate = Calendar.current.date(byAdding: .hour, value: hourOffset, to: currentDate)!
-            let entry = SimpleEntry(date: entryDate, emoji: "😀")
-            entries.append(entry)
-        }
-
-        let timeline = Timeline(entries: entries, policy: .atEnd)
+        let timeline = Timeline(entries: [ToDoEntry(toDoDisplay: toDisplay)], policy: .atEnd)
         completion(timeline)
     }
 }
 
-struct SimpleEntry: TimelineEntry {
-    let date: Date
-    let emoji: String
+struct ToDoEntry: TimelineEntry {
+    let date: Date = .now
+    var toDoDisplay : [ToDo]
 }
 
 struct ToDoWidgetEntryView : View {
@@ -44,11 +37,35 @@ struct ToDoWidgetEntryView : View {
 
     var body: some View {
         VStack {
-            Text("Time:")
-            Text(entry.date, style: .time)
-
-            Text("Emoji:")
-            Text(entry.emoji)
+           Text("ToDo Items")
+            .fontWeight(.bold)
+            .padding(.bottom , 5)
+            
+            VStack {
+                if entry.toDoDisplay.isEmpty {
+                    Text("Todos Completed")
+                } else {
+                    ForEach(entry.toDoDisplay) { ToDo in
+                    
+                        HStack {
+                            Button(intent: CompleteToDoIntent(id: ToDo.id)) {
+                                Image(systemName: ToDo.isDone ? "checkmark.circle.fill" : "circle")
+                                    .foregroundColor(.purple)
+                            } .buttonStyle(.plain)
+                            
+                            VStack(alignment: .leading) {
+                                Text(ToDo.name)
+                                    .textScale(.secondary)
+                                    .lineLimit(1)
+                                    .strikethrough(ToDo.isDone , pattern: .solid , color: .black)
+                                Divider()
+                            }
+                            
+                        }
+                    }
+                }
+            }
+            
         }
     }
 }
@@ -67,14 +84,14 @@ struct ToDoWidget: Widget {
                     .background()
             }
         }
-        .configurationDisplayName("My Widget")
-        .description("This is an example widget.")
+        .configurationDisplayName("ToDo Widget")
+        .description("ToDo Widget with Interactions")
     }
 }
 
 #Preview(as: .systemSmall) {
     ToDoWidget()
 } timeline: {
-    SimpleEntry(date: .now, emoji: "😀")
-    SimpleEntry(date: .now, emoji: "🤩")
-}
+    ToDoEntry(toDoDisplay: Array(SharedDatas.shared.toDos.prefix(3)))
+    ToDoEntry(toDoDisplay: Array(SharedDatas.shared.toDos.reversed().prefix(3)))
+    }
